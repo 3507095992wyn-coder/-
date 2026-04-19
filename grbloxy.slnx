@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/解决方案项/">
+    <File Path="receive_controller.cs" />
+    <File Path="Serial_Commands.cs" />
+  </Folder>
+  <Project Path="grbloxy.csproj" Id="2178bc2b-14aa-4969-ac6e-514577ebd47b" />
+</Solution>

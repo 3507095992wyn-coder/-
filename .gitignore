@@ -1,0 +1,28 @@
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+app.publish/
+
+# NuGet restore cache
+packages/
+
+# Local signing / certificates
+*.pfx
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.cache
