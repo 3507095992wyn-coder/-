@@ -88,6 +88,7 @@
             this.button6 = new System.Windows.Forms.Button();
             this.button9 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
+            this.button10 = new System.Windows.Forms.Button();
             this.backgroundWorker2 = new System.ComponentModel.BackgroundWorker();
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
             this.serialPort2 = new System.IO.Ports.SerialPort(this.components);
@@ -832,6 +833,17 @@
             // 
             this.errorProvider1.ContainerControl = this;
             // 
+            // button10
+            // 
+            this.button10.Location = new System.Drawing.Point(12, 128);
+            this.button10.Margin = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.button10.Name = "button10";
+            this.button10.Size = new System.Drawing.Size(112, 32);
+            this.button10.TabIndex = 39;
+            this.button10.Text = "提交并推送";
+            this.button10.UseVisualStyleBackColor = true;
+            this.button10.Click += new System.EventHandler(this.button10_Click);
+            // 
             // groupBox6
             // 
             this.groupBox6.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -977,9 +989,6 @@
             // groupBox8
             // 
             this.groupBox8.Controls.Add(this.operationButtonsPanel);
-            this.groupBox8.Controls.Add(this.button7);
-            this.groupBox8.Controls.Add(this.button6);
-            this.groupBox8.Controls.Add(this.button9);
             this.groupBox8.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox8.Location = new System.Drawing.Point(585, 3);
             this.groupBox8.Margin = new System.Windows.Forms.Padding(3);
@@ -1072,6 +1081,7 @@
             this.operationButtonsPanel.Controls.Add(this.button9);
             this.operationButtonsPanel.Controls.Add(this.button6);
             this.operationButtonsPanel.Controls.Add(this.button7);
+            this.operationButtonsPanel.Controls.Add(this.button10);
             this.operationButtonsPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.operationButtonsPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.operationButtonsPanel.Location = new System.Drawing.Point(3, 21);
@@ -1449,6 +1459,7 @@
         private System.Windows.Forms.ComboBox comboBox11;
         private System.Windows.Forms.Label label21;
         private System.Windows.Forms.Button button5;
+        private System.Windows.Forms.Button button10;
         private System.Windows.Forms.ComboBox comboBox12;
         private System.Windows.Forms.Label label25;
         private System.Windows.Forms.ComboBox comboBox13;

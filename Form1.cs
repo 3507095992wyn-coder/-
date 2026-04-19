@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Globalization;
+using System.Diagnostics;
 using ScottPlot.WinForms;
 
 
@@ -102,6 +103,15 @@ namespace grbloxy
         private DateTime lastRealtimeCurveRefreshUtc = DateTime.MinValue;
         private const int RealtimeCurveRefreshIntervalMs = 60;
         private int latestRealtimeCurvePointCount = 0;
+        private bool isGitPushInProgress = false;
+
+        private sealed class GitCommandResult
+        {
+            public int ExitCode { get; set; }
+            public string StandardOutput { get; set; } = string.Empty;
+            public string StandardError { get; set; } = string.Empty;
+            public bool Success => ExitCode == 0;
+        }
         private void Form1_Load(object sender, EventArgs e)
         {
 
@@ -2010,6 +2020,226 @@ namespace grbloxy
         private void saveFileDialog1_FileOk(object sender, CancelEventArgs e)
         {
 
+        }
+
+        private async void button10_Click(object sender, EventArgs e)
+        {
+            if (isGitPushInProgress)
+            {
+                MessageBox.Show("正在执行提交并推送，请稍候。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string repositoryRoot = FindGitRepositoryRoot();
+            if (string.IsNullOrWhiteSpace(repositoryRoot))
+            {
+                MessageBox.Show("未找到 Git 仓库根目录，请确认当前程序位于已初始化的项目仓库中。", "Git 提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string gitExecutable = FindGitExecutable();
+            if (string.IsNullOrWhiteSpace(gitExecutable))
+            {
+                MessageBox.Show("未找到 git.exe，请确认 Git for Windows 已正确安装。", "Git 提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            button10.Enabled = false;
+            isGitPushInProgress = true;
+
+            try
+            {
+                AppendSerialLog($"[Git] 开始提交并推送 | 仓库={repositoryRoot}");
+
+                GitCommandResult statusResult = await RunGitCommandAsync(gitExecutable, repositoryRoot, "status --porcelain");
+                if (!statusResult.Success)
+                {
+                    throw new InvalidOperationException(BuildGitFailureMessage("检查工作区状态失败", statusResult));
+                }
+
+                if (string.IsNullOrWhiteSpace(statusResult.StandardOutput))
+                {
+                    AppendSerialLog("[Git] 当前没有可提交的改动");
+                    MessageBox.Show("当前没有可提交的改动。", "Git 提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                GitCommandResult addResult = await RunGitCommandAsync(gitExecutable, repositoryRoot, "add .");
+                if (!addResult.Success)
+                {
+                    throw new InvalidOperationException(BuildGitFailureMessage("暂存文件失败", addResult));
+                }
+
+                string commitMessage = $"auto update {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                GitCommandResult commitResult = await RunGitCommandAsync(
+                    gitExecutable,
+                    repositoryRoot,
+                    $"commit -m \"{commitMessage}\"");
+
+                if (!commitResult.Success)
+                {
+                    if (ContainsNoCommitChanges(commitResult))
+                    {
+                        AppendSerialLog("[Git] git commit 提示没有新增提交内容");
+                        MessageBox.Show("当前没有新的可提交内容。", "Git 提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    throw new InvalidOperationException(BuildGitFailureMessage("创建提交失败", commitResult));
+                }
+
+                AppendSerialLog($"[Git] 已创建提交：{commitMessage}");
+
+                GitCommandResult branchResult = await RunGitCommandAsync(gitExecutable, repositoryRoot, "branch --show-current");
+                string currentBranch = branchResult.Success && !string.IsNullOrWhiteSpace(branchResult.StandardOutput)
+                    ? branchResult.StandardOutput.Trim()
+                    : "main";
+
+                GitCommandResult pushResult = await RunGitCommandAsync(
+                    gitExecutable,
+                    repositoryRoot,
+                    $"push origin {currentBranch}");
+
+                if (!pushResult.Success)
+                {
+                    throw new InvalidOperationException(BuildGitFailureMessage("推送到 GitHub 失败", pushResult));
+                }
+
+                AppendSerialLog($"[Git] 已推送到 origin/{currentBranch}");
+                MessageBox.Show("代码已成功提交并推送到 GitHub。", "Git 提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                AppendSerialLog($"[Git] 提交并推送失败：{ex.Message}");
+                MessageBox.Show($"提交并推送失败：{ex.Message}", "Git 错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                isGitPushInProgress = false;
+                button10.Enabled = true;
+            }
+        }
+
+        private string FindGitRepositoryRoot()
+        {
+            string current = AppDomain.CurrentDomain.BaseDirectory;
+            while (!string.IsNullOrWhiteSpace(current))
+            {
+                if (Directory.Exists(Path.Combine(current, ".git")))
+                {
+                    return current;
+                }
+
+                DirectoryInfo parent = Directory.GetParent(current);
+                if (parent == null)
+                {
+                    break;
+                }
+
+                current = parent.FullName;
+            }
+
+            return string.Empty;
+        }
+
+        private string FindGitExecutable()
+        {
+            string[] candidates =
+            {
+                @"D:\Program Files\Git\cmd\git.exe",
+                @"C:\Program Files\Git\cmd\git.exe",
+                @"C:\Program Files\Git\bin\git.exe",
+                @"C:\Program Files (x86)\Git\cmd\git.exe",
+                @"C:\Program Files (x86)\Git\bin\git.exe"
+            };
+
+            foreach (string candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            string pathValue = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+            foreach (string pathEntry in pathValue.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                try
+                {
+                    string candidate = Path.Combine(pathEntry.Trim(), "git.exe");
+                    if (File.Exists(candidate))
+                    {
+                        return candidate;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private async Task<GitCommandResult> RunGitCommandAsync(string gitExecutable, string workingDirectory, string arguments)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = gitExecutable,
+                Arguments = arguments,
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+
+            using (var process = new Process { StartInfo = startInfo })
+            {
+                process.Start();
+                string stdout = await process.StandardOutput.ReadToEndAsync();
+                string stderr = await process.StandardError.ReadToEndAsync();
+                await Task.Run(() => process.WaitForExit());
+
+                if (!string.IsNullOrWhiteSpace(stdout))
+                {
+                    AppendSerialLog("[Git] " + stdout.Trim());
+                }
+
+                if (!string.IsNullOrWhiteSpace(stderr))
+                {
+                    AppendSerialLog("[Git] " + stderr.Trim());
+                }
+
+                return new GitCommandResult
+                {
+                    ExitCode = process.ExitCode,
+                    StandardOutput = stdout,
+                    StandardError = stderr
+                };
+            }
+        }
+
+        private bool ContainsNoCommitChanges(GitCommandResult result)
+        {
+            string combined = ((result?.StandardOutput ?? string.Empty) + "\n" + (result?.StandardError ?? string.Empty)).ToLowerInvariant();
+            return combined.Contains("nothing to commit") ||
+                combined.Contains("no changes added to commit");
+        }
+
+        private string BuildGitFailureMessage(string prefix, GitCommandResult result)
+        {
+            string detail = !string.IsNullOrWhiteSpace(result?.StandardError)
+                ? result.StandardError.Trim()
+                : result?.StandardOutput?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(detail))
+            {
+                detail = $"退出码 {result?.ExitCode ?? -1}";
+            }
+
+            return $"{prefix}：{detail}";
         }
     }
 }
