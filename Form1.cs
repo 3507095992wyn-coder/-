@@ -145,16 +145,17 @@ namespace grbloxy
             comboBox5.Enabled = false;
             InitializePlotModeSelector();
             InitializeCurveDisplayModeSelector();
-            if (string.IsNullOrWhiteSpace(textBox7.Text)) textBox7.Text = "0";
-            if (string.IsNullOrWhiteSpace(textBox14.Text)) textBox14.Text = "10";
-            if (string.IsNullOrWhiteSpace(textBox8.Text)) textBox8.Text = "0";
-            if (string.IsNullOrWhiteSpace(textBox15.Text)) textBox15.Text = "10";
-            if (string.IsNullOrWhiteSpace(textBox13.Text)) textBox13.Text = "0";
-            if (string.IsNullOrWhiteSpace(textBox16.Text)) textBox16.Text = "10";
-            if (string.IsNullOrWhiteSpace(textBox9.Text)) textBox9.Text = "1";
-            if (string.IsNullOrWhiteSpace(textBox10.Text)) textBox10.Text = "1";
-            if (string.IsNullOrWhiteSpace(textBox11.Text)) textBox11.Text = "1";
-            if (string.IsNullOrWhiteSpace(textBox17.Text)) textBox17.Text = Control.DefaultSampleCount.ToString(CultureInfo.InvariantCulture);
+            if (string.IsNullOrWhiteSpace(textBox7.Text)) textBox7.Text = "-25";
+            if (string.IsNullOrWhiteSpace(textBox14.Text)) textBox14.Text = "25";
+            if (string.IsNullOrWhiteSpace(textBox8.Text)) textBox8.Text = "-50";
+            if (string.IsNullOrWhiteSpace(textBox15.Text)) textBox15.Text = "50";
+            if (string.IsNullOrWhiteSpace(textBox13.Text)) textBox13.Text = "-30";
+            if (string.IsNullOrWhiteSpace(textBox16.Text)) textBox16.Text = "0";
+            if (string.IsNullOrWhiteSpace(textBox9.Text)) textBox9.Text = "5";
+            if (string.IsNullOrWhiteSpace(textBox10.Text)) textBox10.Text = "5";
+            if (string.IsNullOrWhiteSpace(textBox11.Text)) textBox11.Text = "5";
+            if (string.IsNullOrWhiteSpace(textBox12.Text)) textBox12.Text = "3000";
+            if (string.IsNullOrWhiteSpace(textBox17.Text)) textBox17.Text = "2";
             ResetLayerView();
             UpdatePlotModeUi();
         }
